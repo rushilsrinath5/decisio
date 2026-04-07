@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>37 Tabs Open</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #03010a;
+  --s1:      #06030f;
+  --s2:      #0d0920;
+  --s3:      #120c28;
+  --s4:      #1a1035;
+  --s5:      #231445;
+  --p900:    #2d1f52;
+  --p800:    #3d2a70;
+  --p700:    #4c2d95;
+  --p600:    #5b21b6;
+  --p500:    #7c3aed;
+  --p400:    #8b5cf6;
+  --p300:    #a78bfa;
+  --p200:    #c4b5fd;
+  --fuchsia: #d946ef;
+  --flt:     #f5d0fe;
+  --good:    #22c55e;
+  --warn:    #f59e0b;
+  --danger:  #ef4444;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden; color: #fff;
+  user-select: none;
+}
+
+/* grain */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: .5;
+}
+
+/* ambient orbs */
+.orb { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(110px); z-index: 0; }
+.o1 { width: 700px; height: 500px; top: -160px; left: -160px;
+  background: radial-gradient(circle, rgba(124,58,237,.2) 0%, transparent 70%); }
+.o2 { width: 500px; height: 500px; bottom: -140px; right: -100px;
+  background: radial-gradient(circle, rgba(217,70,239,.14) 0%, transparent 70%); }
+.o3 { width: 280px; height: 280px; top: 40%; left: 32%;
+  background: radial-gradient(circle, rgba(76,45,149,.12) 0%, transparent 70%); }
+
+/* scene label */
+#lbl {
+  position: fixed; top: 26px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--p300); z-index: 200; opacity: 0; transition: opacity .9s ease;
+}
+#lbl.on { opacity: 1; }
+
+/* laptop wrapper */
+#lw {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .9s ease, transform .9s cubic-bezier(.22,1,.36,1);
+}
+#lw.on { opacity: 1; transform: translateY(0); }
+
+/* lid */
+#lid {
+  width: 920px;
+  border-radius: 14px 14px 0 0;
+  border: 1.5px solid rgba(255,255,255,.09); border-bottom: none;
+  overflow: hidden; background: #141416;
+  box-shadow:
+    0 -2px 0 rgba(255,255,255,.05) inset,
+    0 0 60px rgba(124,58,237,.15),
+    0 -8px 80px rgba(124,58,237,.08);
+}
+
+/* menu bar */
+#mb {
+  height: 27px;
+  background: rgba(22,22,26,.97);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; position: relative; z-index: 30;
+}
+.mbl { display: flex; align-items: center; gap: 16px; }
+.mba { font-size: 14px; color: rgba(255,255,255,.85); }
+.mbi { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.72); letter-spacing: -.01em; }
+.mbr { display: flex; align-items: center; gap: 14px; }
+#clk { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.75); font-variant-numeric: tabular-nums; }
+
+/* RAM */
+#mw { display: flex; align-items: center; gap: 5px; }
+.mlb { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.4); letter-spacing: .04em; }
+#mt { width: 52px; height: 6px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden; }
+#mf { height: 100%; width: 0%; border-radius: 3px; background: var(--good);
+  transition: width 1.6s cubic-bezier(.4,0,.2,1), background 1.6s ease; }
+#mx { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.55);
+  transition: color .8s ease; min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Battery */
+#bw { display: flex; align-items: center; gap: 5px; }
+#bt { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.75);
+  transition: color .8s ease; min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+#bi {
+  width: 27px; height: 13px;
+  border: 1.5px solid rgba(255,255,255,.38); border-radius: 3px; padding: 2px;
+  position: relative; display: flex; align-items: center;
+  transition: border-color .8s ease;
+}
+#bi::after {
+  content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 5.5px; background: rgba(255,255,255,.35); border-radius: 0 2px 2px 0;
+}
+#bf { height: 100%; width: 100%; border-radius: 1.5px; background: var(--good);
+  transition: width 1.6s cubic-bezier(.4,0,.2,1), background 1.6s ease; }
+
+@keyframes bat-crit { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)} 50%{box-shadow:0 0 0 5px rgba(239,68,68,0)} }
+#bi.crit { animation: bat-crit 1.1s ease-in-out infinite; border-color: rgba(239,68,68,.6); }
+
+/* tab bar */
+#tb {
+  height: 37px;
+  background: rgba(30,30,34,.94);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: flex-end;
+  padding: 0 6px; gap: 1px;
+  overflow: hidden; position: relative; z-index: 20;
+  box-shadow: inset 0 -1px 0 rgba(124,58,237,.22);
+}
+
+.tab {
+  height: 29px;
+  background: rgba(255,255,255,.05);
+  border-radius: 7px 7px 0 0;
+  border: 1px solid rgba(255,255,255,.07); border-bottom: none;
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 8px;
+  font-size: 9.5px; font-weight: 500; color: rgba(255,255,255,.46);
+  white-space: nowrap; cursor: default; flex-shrink: 0; overflow: hidden;
+  opacity: 0; transform: scaleY(0); transform-origin: bottom center;
+  transition:
+    opacity .35s ease,
+    transform .42s cubic-bezier(.34,1.56,.64,1),
+    width .52s cubic-bezier(.4,0,.2,1),
+    min-width .52s cubic-bezier(.4,0,.2,1),
+    background .3s ease,
+    color .3s ease,
+    border-color .3s ease;
+}
+.tab.on { opacity: 1; transform: scaleY(1); }
+.tab.act {
+  background: var(--s3); color: rgba(255,255,255,.9);
+  border-color: rgba(139,92,246,.38);
+  box-shadow: 0 0 14px rgba(124,58,237,.12) inset;
+}
+.tab.urg { border-color: rgba(217,70,239,.42) !important; color: var(--flt) !important; }
+.tdot { width: 9px; height: 9px; border-radius: 2.5px; flex-shrink: 0; }
+.ttl  { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.tx   { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.07);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 7px; color: rgba(255,255,255,.22); margin-left: 2px; }
+
+/* address bar */
+#ab {
+  height: 35px;
+  background: rgba(18,18,22,.94);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  display: flex; align-items: center; padding: 0 10px; gap: 8px; z-index: 19;
+}
+.nvb {
+  width: 21px; height: 21px; border-radius: 50%;
+  background: rgba(255,255,255,.06); border: none;
+  color: rgba(255,255,255,.28); font-size: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+#ub {
+  flex: 1; height: 21px;
+  background: rgba(255,255,255,.07); border-radius: 5px;
+  border: 1px solid rgba(139,92,246,.18);
+  display: flex; align-items: center; padding: 0 9px;
+  font-size: 10px; color: rgba(255,255,255,.44); font-family: var(--mono); overflow: hidden;
+}
+#ut { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* browser content */
+#ct {
+  height: 400px; background: var(--s2);
+  position: relative; overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 80%, rgba(124,58,237,.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(217,70,239,.05) 0%, transparent 50%);
+}
+
+/* pages */
+.pg {
+  position: absolute; inset: 0; padding: 30px 40px;
+  display: flex; flex-direction: column; gap: 12px;
+  opacity: 0; transition: opacity .45s ease; pointer-events: none;
+}
+.pg.on { opacity: 1; }
+
+.ey {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 10.5px; font-weight: 600; width: fit-content;
+}
+.er { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.28);  color: #fca5a5; }
+.ew { background: rgba(245,158,11,.1);  border: 1px solid rgba(245,158,11,.28); color: #fcd34d; }
+.ep { background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.3);  color: var(--p200); }
+.ef { background: rgba(217,70,239,.1);  border: 1px solid rgba(217,70,239,.28); color: var(--flt); }
+
+.pgt { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -.03em; line-height: 1.15; }
+.pgb { font-size: 13px; font-weight: 300; color: rgba(203,213,225,.7); line-height: 1.75; max-width: 540px; }
+.sk  { border-radius: 5px; background: rgba(255,255,255,.05); }
+
+.cav { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--p600), var(--fuchsia)); }
+.cmsg {
+  background: rgba(255,255,255,.07); border-radius: 0 12px 12px 12px;
+  padding: 9px 13px; font-size: 12px; color: rgba(255,255,255,.78); line-height: 1.65; max-width: 360px;
+}
+.cts { font-size: 9px; color: rgba(255,255,255,.22); margin-top: 4px; }
+.rib {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 8px 12px; max-width: 440px;
+  font-size: 11.5px; color: rgba(255,255,255,.22);
+}
+
+/* overlays */
+#heat {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+  background: linear-gradient(180deg, rgba(124,58,237,.05) 0%, transparent 40%, rgba(217,70,239,.04) 100%);
+  transition: opacity 2.5s ease;
+}
+#heat.on { opacity: 1; }
+
+#scan {
+  position: absolute; left: 0; right: 0; height: 1.5px; z-index: 9;
+  background: linear-gradient(90deg, transparent, rgba(167,139,250,.3), transparent);
+  pointer-events: none; opacity: 0; animation: sc 3.5s linear infinite;
+  transition: opacity 1.2s ease;
+}
+#scan.on { opacity: 1; }
+@keyframes sc { from{top:0} to{top:100%} }
+
+#dim {
+  position: absolute; inset: 0; z-index: 7; pointer-events: none;
+  background: transparent; transition: background 3s ease;
+}
+#dim.on { background: rgba(0,0,0,.2); }
+
+/* warning banner */
+#wnr {
+  position: absolute; top: 14px; left: 50%;
+  transform: translateX(-50%) translateY(-90px);
+  background: rgba(22,6,56,.97); backdrop-filter: blur(20px);
+  border: 1px solid rgba(217,70,239,.45); border-radius: 14px; padding: 13px 20px;
+  display: flex; align-items: center; gap: 12px; z-index: 50; white-space: nowrap;
+  transition: transform .7s cubic-bezier(.34,1.56,.64,1), opacity .5s ease;
+  opacity: 0;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 0 .5px rgba(217,70,239,.15);
+}
+#wnr.on { transform: translateX(-50%) translateY(0); opacity: 1; }
+.wdot { width: 8px; height: 8px; border-radius: 50%; background: var(--fuchsia); flex-shrink: 0; animation: bl 1.1s ease-in-out infinite; }
+@keyframes bl { 0%,100%{opacity:1}50%{opacity:.15} }
+.wt  { font-size: 12.5px; font-weight: 700; color: var(--flt); }
+.ws  { font-size: 10px; color: rgba(245,208,254,.52); margin-top: 2px; }
+
+/* base */
+#base {
+  width: 962px; height: 16px;
+  background: linear-gradient(180deg, #2a2a2e 0%, #1c1c1f 100%);
+  border-radius: 0 0 10px 10px;
+  border: 1.5px solid rgba(255,255,255,.08); border-top: 1px solid rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+}
+#hng { width: 100px; height: 3.5px; background: rgba(255,255,255,.07); border-radius: 2px; }
+#ft {
+  width: 840px; height: 5px;
+  background: linear-gradient(180deg, #111 0%, #0d0d0d 100%);
+  border-radius: 0 0 7px 7px; border: 1px solid rgba(255,255,255,.05); border-top: none;
+}
+
+/* HUD */
+#hud {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  background: rgba(13,9,32,.84); backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(139,92,246,.22); border-radius: 40px;
+  padding: 9px 22px; z-index: 300;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 28px rgba(0,0,0,.45);
+}
+#hn { font-size: 16px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+#hl { font-size: 11px; font-weight: 500; color: var(--p300); }
+#hm { font-size: 11px; font-weight: 700; color: var(--fuchsia); }
+
+/* flash */
+#fl {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--p300); opacity: 0; transition: opacity .4s ease;
+  z-index: 300; white-space: nowrap; pointer-events: none;
+}
+#fl.on { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="orb o3"></div>
+
+<div id="lbl">Your brain on ADHD</div>
+
+<div id="lw">
+  <div id="lid">
+
+    <!-- MENU BAR -->
+    <div id="mb">
+      <div class="mbl">
+        <span class="mba">&#63743;</span>
+        <span class="mbi">Finder</span>
+        <span class="mbi">File</span>
+        <span class="mbi">Edit</span>
+        <span class="mbi">View</span>
+        <span class="mbi">Window</span>
+        <span class="mbi">Help</span>
+      </div>
+      <div class="mbr">
+        <div id="mw">
+          <span class="mlb">RAM</span>
+          <div id="mt"><div id="mf"></div></div>
+          <span id="mx">8%</span>
+        </div>
+        <div id="bw">
+          <span id="bt">100%</span>
+          <div id="bi"><div id="bf"></div></div>
+        </div>
+        <span id="clk">9:41 AM</span>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <div id="tb"></div>
+
+    <!-- ADDRESS BAR -->
+    <div id="ab">
+      <div class="nvb">&#8249;</div>
+      <div class="nvb">&#8250;</div>
+      <div class="nvb">&#8635;</div>
+      <div id="ub"><span id="ut">about:blank</span></div>
+      <div class="nvb">&#9734;</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="ct">
+      <div id="dim"></div>
+      <div id="heat"></div>
+      <div id="scan"></div>
+
+      <div id="wnr">
+        <div class="wdot"></div>
+        <div>
+          <div class="wt">&#9889; System Overheating</div>
+          <div class="ws">37 tabs open &nbsp;&middot;&nbsp; Memory critical &nbsp;&middot;&nbsp; Battery draining fast</div>
+        </div>
+      </div>
+
+      <!-- Page 0: Report -->
+      <div class="pg on" id="p0">
+        <div class="ey er">&#9200; Due in 12 hours</div>
+        <div class="pgt">Q3 Research Report</div>
+        <div class="pgb">You opened this four hours ago. The cursor is still blinking at line one. You know exactly what you need to write. But something keeps pulling you away.</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
+          <div class="sk" style="height:10px;width:94%"></div>
+          <div class="sk" style="height:10px;width:78%"></div>
+          <div class="sk" style="height:10px;width:86%"></div>
+          <div class="sk" style="height:10px;width:62%"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <div class="sk" style="height:28px;width:82px;border-radius:8px;background:rgba(124,58,237,.22)"></div>
+          <div class="sk" style="height:28px;width:60px;border-radius:8px"></div>
+        </div>
+      </div>
+
+      <!-- Page 1: Email -->
+      <div class="pg" id="p1">
+        <div class="ey ew">&#128231; Unsent draft</div>
+        <div class="pgt">Email to Prof. Chen</div>
+        <div class="pgb">Re: Extension request. You have had the draft ready for two days. You have not sent it. Every time you open it, something else needs to happen first.</div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;margin-top:4px;max-width:480px">
+          <div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:8px">Draft &mdash; unsent since Tuesday</div>
+          <div class="sk" style="height:9px;width:96%;margin-bottom:7px"></div>
+          <div class="sk" style="height:9px;width:82%;margin-bottom:7px"></div>
+          <div class="sk" style="height:9px;width:70%"></div>
+        </div>
+      </div>
+
+      <!-- Page 2: Friend message -->
+      <div class="pg" id="p2">
+        <div class="ey ep">&#128172; Left on read &mdash; 3 days ago</div>
+        <div class="pgt">Message from Jamie</div>
+        <div class="pgb">You meant to reply. You still mean to reply. The right moment never came.</div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-top:6px">
+          <div class="cav"></div>
+          <div>
+            <div class="cmsg">hey are you okay? haven&rsquo;t heard from you in a while &#128153;</div>
+            <div class="cts">Tuesday 11:42 AM &nbsp;&middot;&nbsp; Read</div>
+          </div>
+        </div>
+        <div class="rib" style="margin-top:10px">
+          <span>Reply&hellip;</span>
+          <span style="margin-left:auto;font-size:14px">&#127908;</span>
+        </div>
+      </div>
+
+      <!-- Page 3: Startup idea -->
+      <div class="pg" id="p3">
+        <div class="ey ef">&#128161; Suddenly urgent</div>
+        <div class="pgt">New Note &mdash; Startup Idea</div>
+        <div class="pgb">An app that reads your cognitive load. Detects when you are spiralling. Intervenes before the crash. This feels more important than the report right now.</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--p300)">Brain dump:</div>
+          <div class="sk" style="height:9px;width:90%"></div>
+          <div class="sk" style="height:9px;width:74%"></div>
+          <div class="sk" style="height:9px;width:96%"></div>
+          <div class="sk" style="height:9px;width:66%"></div>
+        </div>
+      </div>
+
+      <!-- Generic page -->
+      <div class="pg" id="pg">
+        <div class="ey ep" id="gb">Tab</div>
+        <div class="pgt" id="gt">New Tab</div>
+        <div class="pgb" id="gs">Another thought that could not wait.</div>
+        <div id="gl" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /lid -->
+
+  <div id="base"><div id="hng"></div></div>
+  <div id="ft"></div>
+</div><!-- /lw -->
+
+<div id="hud">
+  <span id="hn">0</span>
+  <span id="hl">/ <span id="hm">37</span> tabs open</span>
+</div>
+<div id="fl"></div>
+
+<script>
+var TABS = [
+  {l:"Report Due \u2014 12 hrs",     u:"docs.google.com/report-q3-final",   d:"#ef4444", urg:true,  p:0},
+  {l:"Email to Prof. Chen",           u:"mail.google.com/draft/prof-chen",   d:"#4285f4", urg:false, p:1},
+  {l:"Jamie (read 3 days ago)",       u:"messages.app/chat/jamie",           d:"#25d366", urg:false, p:2},
+  {l:"Startup Idea \ud83d\udca1",     u:"notes.app/brain-dump",              d:"#d946ef", urg:true,  p:3},
+  {l:"Grocery List",                  u:"notes.app/groceries",               d:"#22c55e"},
+  {l:"Reddit \u2014 r/ADHD",          u:"reddit.com/r/adhd",                 d:"#ff4500"},
+  {l:"Twitter / X",                   u:"x.com/home",                        d:"#1d9bf0"},
+  {l:"Mom Birthday Gifts",            u:"amazon.com/s?birthday",             d:"#f90"},
+  {l:"YouTube Lo-fi Study",           u:"youtube.com/watch?v=lofi",          d:"#ff0000"},
+  {l:"Dentist Appointment",           u:"calendar.google.com/event",         d:"#4285f4"},
+  {l:"LinkedIn \u2014 Jobs",          u:"linkedin.com/jobs",                 d:"#0a66c2"},
+  {l:"Check Bank Balance",            u:"dbs.com.sg/dashboard",              d:"#e60012", urg:true},
+  {l:"Flights to Bangkok",            u:"skyscanner.com/routes",             d:"#00a1de"},
+  {l:"Discord Server",                u:"discord.com/channels/@me",          d:"#5865f2"},
+  {l:"Resume Draft v3",               u:"docs.google.com/resume-v3",         d:"#4285f4", urg:true},
+  {l:"Cancel Subscription",           u:"netflix.com/account",               d:"#e50914"},
+  {l:"Sleep Research",                u:"scholar.google.com/sleep-hrv",      d:"#7c3aed"},
+  {l:"Side Project \u2014 GitHub",    u:"github.com/myproject/issues",       d:"#c4b5fd", urg:true},
+  {l:"Group Chat \u2014 47 unread",   u:"telegram.org/group",                d:"#2ca5e0"},
+  {l:"Call Dad",                      u:"facetime://dad",                    d:"#22c55e", urg:true},
+  {l:"Assignment Brainstorm",         u:"notion.so/brainstorm",              d:"#fff"},
+  {l:"Course Lecture 9",              u:"coursera.org/learn/module9",        d:"#0056d2"},
+  {l:"That Book I Bought",            u:"goodreads.com/list",                d:"#e9722e"},
+  {l:"Meditation App",                u:"calm.com/breathe",                  d:"#7c4dff"},
+  {l:"Gym Schedule",                  u:"maps.app/gym-timetable",            d:"#ff5722"},
+  {l:"React Docs",                    u:"react.dev/learn",                   d:"#61dafb"},
+  {l:"Stack Overflow",                u:"stackoverflow.com/q/useEffect",     d:"#f48024"},
+  {l:"Tweet Draft (unsent)",          u:"x.com/compose",                     d:"#1d9bf0"},
+  {l:"Spotify",                       u:"spotify.com/search",                d:"#1db954"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"},
+  {l:"New Tab",                       u:"chrome://newtab",                   d:"#555"}
+];
+
+var GEN = [
+  {b:"&#128203; Notes",    t:"Grocery List",          s:"Eggs, oat milk, protein bars. You will forget by the time you get there."},
+  {b:"&#128172; Reddit",   t:"r / ADHD",               s:"Just for five minutes. You told yourself that an hour ago."},
+  {b:"&#9992; Social",     t:"Twitter / X",            s:"You were going to post something. You have already forgotten what."},
+  {b:"&#127873; Shopping", t:"Birthday Gifts for Mom", s:"Her birthday was last week. You are still looking."},
+  {b:"&#127926; Music",    t:"Lo-fi Study Playlist",   s:"You needed the right vibe before you could start the report."},
+  {b:"&#129463; Health",   t:"Dentist Appointment",    s:"It has been 14 months. You will book it tomorrow."},
+  {b:"&#128188; Jobs",     t:"LinkedIn Job Board",     s:"You are not job hunting. You are just looking."},
+  {b:"&#127974; Finance",  t:"Bank Balance",           s:"Lower than you thought. That is a problem for future you."},
+  {b:"&#9992; Travel",     t:"Flights to Bangkok",     s:"Maybe in March. Probably not."},
+  {b:"&#127918; Social",   t:"Discord Server",         s:"47 unread messages. You will catch up later."},
+  {b:"&#128196; Career",   t:"Resume Draft v3",        s:"Version 1 was two years ago. This has been open since Monday."},
+  {b:"&#128250; Stream",   t:"Cancel Netflix",         s:"You keep meaning to. You keep not doing it."},
+  {b:"&#128214; Research", t:"Sleep and HRV Research", s:"You opened this at 2 AM. It is still open."},
+  {b:"&#128187; Code",     t:"Side Project",           s:"12 open issues. All of them yours."},
+  {b:"&#128172; Messages", t:"Group Chat",             s:"47 unread. You will catch up eventually."},
+  {b:"&#128222; Family",   t:"Call Dad",               s:"It has been three weeks. He has not said anything. That is worse."},
+  {b:"&#128221; Writing",  t:"Assignment Brainstorm",  s:"A blank Notion page. Very inspirational."},
+  {b:"&#127979; Learning", t:"Course Lecture 9",       s:"You are on lecture 2. Lecture 9 looked interesting."},
+  {b:"&#128218; Reading",  t:"That Book",              s:"Bought in January. You read the first page."},
+  {b:"&#129487; Wellness", t:"Meditation App",         s:"Opened. Never started. The irony is noted."},
+  {b:"&#127947; Fitness",  t:"Gym Timetable",          s:"You will go this week. Definitely this week."},
+  {b:"&#128187; Dev",      t:"React Documentation",    s:"useEffect. Again. Same question, different day."},
+  {b:"&#128187; Dev",      t:"Stack Overflow",         s:"The same question you searched last month."},
+  {b:"&#128140; Social",   t:"Tweet Draft",            s:"Too honest. You never sent it."},
+  {b:"&#127925; Music",    t:"Spotify",                s:"Still looking for the right playlist to start the report."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."},
+  {b:"&#128196; System",   t:"New Tab",                s:"..."}
+];
+
+var tabEls = [];
+var tabCount = 0;
+
+function tick() {
+  var now = new Date();
+  var h = now.getHours() % 12 || 12;
+  var m = String(now.getMinutes()).padStart(2,"0");
+  var ap = now.getHours() >= 12 ? "PM" : "AM";
+  document.getElementById("clk").textContent = h + ":" + m + " " + ap;
+}
+tick();
+setInterval(tick, 30000);
+
+function addTab(i) {
+  var data = TABS[i];
+  var strip = document.getElementById("tb");
+  var totalW = 896;
+  var newW = Math.max(48, Math.min(152, Math.floor(totalW / (i + 1)) - 2));
+
+  for (var k = 0; k < tabEls.length; k++) {
+    tabEls[k].style.width = newW + "px";
+    tabEls[k].style.minWidth = newW + "px";
+  }
+
+  var t = document.createElement("div");
+  t.className = "tab" + (data.urg ? " urg" : "");
+  t.style.width = newW + "px";
+  t.style.minWidth = newW + "px";
+
+  var dot = document.createElement("div");
+  dot.className = "tdot";
+  dot.style.background = data.d || "#666";
+
+  var lbl = document.createElement("span");
+  lbl.className = "ttl";
+  lbl.textContent = data.l;
+
+  var x = document.createElement("div");
+  x.className = "tx";
+  x.textContent = "\u00d7";
+
+  t.appendChild(dot);
+  t.appendChild(lbl);
+  t.appendChild(x);
+  strip.appendChild(t);
+  tabEls.push(t);
+
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() { t.classList.add("on"); });
+  });
+
+  tabCount++;
+  document.getElementById("hn").textContent = String(tabCount);
+  setActive(i);
+}
+
+function setActive(i) {
+  for (var k = 0; k < tabEls.length; k++) {
+    tabEls[k].classList.toggle("act", k === i);
+  }
+  document.getElementById("ut").textContent = TABS[i] ? TABS[i].u : "about:blank";
+
+  var pages = document.querySelectorAll(".pg");
+  for (var p = 0; p < pages.length; p++) pages[p].classList.remove("on");
+
+  if (i < 4) {
+    var pg = document.getElementById("p" + i);
+    if (pg) pg.classList.add("on");
+  } else {
+    var g = GEN[i - 4] || {b:"Tab", t:"New Tab", s:"..."};
+    document.getElementById("gb").innerHTML = g.b;
+    document.getElementById("gt").textContent = g.t;
+    document.getElementById("gs").textContent = g.s;
+    var gl = document.getElementById("gl");
+    gl.innerHTML = "";
+    var lc = 2 + Math.floor(Math.random() * 3);
+    for (var j = 0; j < lc; j++) {
+      var d = document.createElement("div");
+      d.className = "sk";
+      d.style.height = "9px";
+      d.style.width = (58 + Math.random() * 38) + "%";
+      gl.appendChild(d);
+    }
+    document.getElementById("pg").classList.add("on");
+  }
+}
+
+function updateMetrics(i) {
+  var r = i / 36;
+  var c = r * r;
+  var bat = Math.max(4, Math.round(100 - c * 96));
+  var mem = Math.min(99, Math.round(8 + c * 91));
+
+  var bf = document.getElementById("bf");
+  var bt = document.getElementById("bt");
+  var bi = document.getElementById("bi");
+  bf.style.width = bat + "%";
+  bt.textContent = bat + "%";
+
+  if (bat > 40) {
+    bf.style.background = "var(--good)"; bt.style.color = "rgba(255,255,255,.75)"; bi.classList.remove("crit");
+  } else if (bat > 18) {
+    bf.style.background = "var(--warn)"; bt.style.color = "#fcd34d"; bi.classList.remove("crit");
+  } else {
+    bf.style.background = "var(--danger)"; bt.style.color = "#fca5a5"; bi.classList.add("crit");
+  }
+
+  var mf = document.getElementById("mf");
+  var mx = document.getElementById("mx");
+  mf.style.width = mem + "%";
+  mx.textContent = mem + "%";
+
+  if (mem < 55) {
+    mf.style.background = "var(--good)"; mx.style.color = "rgba(255,255,255,.55)";
+  } else if (mem < 78) {
+    mf.style.background = "var(--warn)"; mx.style.color = "#fcd34d";
+  } else {
+    mf.style.background = "var(--danger)"; mx.style.color = "#fca5a5";
+  }
+
+  if (i >= 26) {
+    document.getElementById("heat").classList.add("on");
+    document.getElementById("scan").classList.add("on");
+    document.getElementById("dim").classList.add("on");
+  }
+
+  if (i === 36) {
+    setTimeout(function() { document.getElementById("wnr").classList.add("on"); }, 700);
+  }
+}
+
+var ft = null;
+function flash(msg) {
+  var el = document.getElementById("fl");
+  el.textContent = msg;
+  el.classList.add("on");
+  if (ft) clearTimeout(ft);
+  ft = setTimeout(function() { el.classList.remove("on"); }, 2500);
+}
+
+function run() {
+  document.getElementById("lbl").classList.add("on");
+  document.getElementById("lw").classList.add("on");
+
+  var first = [
+    {delay:900,  msg:"A report due in 12 hours."},
+    {delay:3100, msg:"An email to your professor."},
+    {delay:5400, msg:"A friend\u2019s message you left on read."},
+    {delay:8000, msg:"A startup idea that suddenly feels urgent."}
+  ];
+
+  for (var fi = 0; fi < first.length; fi++) {
+    (function(idx, info) {
+      setTimeout(function() {
+        addTab(idx);
+        updateMetrics(idx);
+        flash(info.msg);
+      }, info.delay);
+    })(fi, first[fi]);
+  }
+
+  var t = 10800;
+  for (var i = 4; i < TABS.length; i++) {
+    var gap = Math.max(155, 590 - i * 12);
+    t += gap;
+    (function(idx, when) {
+      setTimeout(function() {
+        addTab(idx);
+        updateMetrics(idx);
+        if (idx === 18) flash("Memory entering warning zone\u2026");
+        if (idx === 28) flash("Battery critical\u2026");
+        if (idx === 36) flash("37 tabs. System overloading.");
+      }, when);
+    })(i, t);
+  }
+}
+
+setTimeout(run, 500);
+</script>
+</body>
+</html>
